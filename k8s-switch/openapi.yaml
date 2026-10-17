@@ -1,0 +1,157 @@
+swagger: '2.0'
+info:
+  title: banquito-core-gateway-for-switch
+  description: API Gateway facade used by Banquito Switch to consume Banquito Core through the core ingress.
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+consumes:
+  - application/json
+  - multipart/form-data
+x-google-backend:
+  address: http://136.68.235.162
+  path_translation: APPEND_PATH_TO_ADDRESS
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login endpoint for SFTP flow
+      operationId: authLogin
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+  /api/v1/auth/logout:
+    post:
+      summary: Logout endpoint for SFTP flow
+      operationId: authLogout
+      responses:
+        '200':
+          description: Successful response
+        '401':
+          description: Unauthorized
+  /api/v1/auth/client-token:
+    post:
+      summary: Client token endpoint for service-to-service auth
+      operationId: authClientToken
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/customers/by-identification/{identification}:
+    get:
+      summary: Get customer by identification
+      operationId: getCustomerByIdentification
+      parameters:
+        - name: identification
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful response
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+  /api/v1/accounts/{accountNumber}:
+    get:
+      summary: Get account by number
+      operationId: getAccountByNumber
+      parameters:
+        - name: accountNumber
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful response
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+  /api/v1/switch-core/company-account-validation:
+    post:
+      summary: Validate company account relationship
+      operationId: validateCompanyAccount
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/switch-core/payment-reservations:
+    post:
+      summary: Create payment reservation
+      operationId: createPaymentReservation
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/switch-core/payment-reservations/{reservationId}/consume:
+    post:
+      summary: Consume payment reservation
+      operationId: consumePaymentReservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+  /api/v1/switch-core/payment-reservations/service-fee:
+    post:
+      summary: Charge service fee for batch
+      operationId: chargeServiceFee
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/notifications/requests:
+    post:
+      summary: Create notification request
+      operationId: createNotificationRequest
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden

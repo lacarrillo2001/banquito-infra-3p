@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "Banquito Switch Smoke Test",
+    "_postman_id": "9d3d64fd-2c26-4a3f-8d30-switch-smoke-test",
+    "description": "Pruebas basicas del switch desplegado en GKE.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "switch_base_url",
+      "value": "http://136.69.42.14"
+    },
+    {
+      "key": "batch_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Batches",
+      "item": [
+        {
+          "name": "List Batches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches/{{batch_id}}",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches",
+                "{{batch_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch State History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches/{{batch_id}}/state-history",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches",
+                "{{batch_id}}",
+                "state-history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch Validation Errors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches/{{batch_id}}/validation-errors",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches",
+                "{{batch_id}}",
+                "validation-errors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch Lines",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches/{{batch_id}}/lines",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches",
+                "{{batch_id}}",
+                "lines"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Batch CSV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{switch_base_url}}/api/v1/batches/upload",
+              "host": [
+                "{{switch_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "batches",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

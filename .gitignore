@@ -1,0 +1,20 @@
+# Maven / Java
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Variables / logs
+.env
+.env.*
+*.log
+
+# Carpetas locales no versionadas
+/postman/
+/sql/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

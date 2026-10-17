@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      serviceAccountName: banquito-core-apps
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.20
+          ports:
+            - name: http
+              containerPort: 8025
+            - name: smtp
+              containerPort: 1025
+          env:
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: TZ
+            - name: MP_MAX_MESSAGES
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: MAILPIT_MAX_MESSAGES
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+spec:
+  selector:
+    app: mailpit
+  ports:
+    - name: http
+      port: 8025
+      targetPort: http
+    - name: smtp
+      port: 1025
+      targetPort: smtp

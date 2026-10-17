@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banquito-sw-sftp-3p
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: banquito-sw-sftp-3p
+  template:
+    metadata:
+      labels:
+        app: banquito-sw-sftp-3p
+    spec:
+      serviceAccountName: banquito-switch-apps
+      containers:
+        - name: banquito-sw-sftp-3p
+          image: us-central1-docker.pkg.dev/banquitog2-p3/banquito/banquito-sw-sftp:prod
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8090
+            - name: sftp
+              containerPort: 2222
+          envFrom:
+            - configMapRef:
+                name: banquito-switch-config
+            - secretRef:
+                name: switch-secrets
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-switch-config
+                  key: SFTP_SERVER_PORT
+          volumeMounts:
+            - name: sftp-data
+              mountPath: /app/sftp
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 384Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+      volumes:
+        - name: sftp-data
+          persistentVolumeClaim:
+            claimName: banquito-switch-sftp-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-sw-sftp-3p
+spec:
+  selector:
+    app: banquito-sw-sftp-3p
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
+    - name: sftp
+      port: 2222
+      targetPort: sftp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-sw-sftp-3p-external
+spec:
+  type: LoadBalancer
+  selector:
+    app: banquito-sw-sftp-3p
+  ports:
+    - name: sftp
+      port: 2222
+      targetPort: sftp

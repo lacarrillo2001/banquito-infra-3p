@@ -1,0 +1,48 @@
+services:
+  # ==========================================
+  # CORE BANCA WEB
+  # ==========================================
+  core-banca-web:
+    image: andrescarrillo2001/banquito-core-web-fronend-p3:latest
+    container_name: banquito-core-banca-web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - banquito
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:3000" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # CORE VENTANILLA
+  # ==========================================
+  core-ventanilla-frontend:
+
+    image: andrescarrillo2001/banquito-core-ventanilla-fronend-p3:latest
+    container_name: banquito-core-ventanilla-frontend
+
+    ports:
+      - "3001:3001"
+
+    env_file:
+      - .env
+
+    networks:
+      - banquito
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3001" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  banquito:
+    driver: bridge

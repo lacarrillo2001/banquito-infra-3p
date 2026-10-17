@@ -1,0 +1,33 @@
+services:
+# ==========================================
+  frontend-switch:
+    image: andrescarrillo2001/banquito-sw-fronend-p3:latest
+    container_name: banquito-frontend-switch
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    ports:
+      - "${FRONTEND_SWITCH_PORT:-3002}:3000"
+
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+      VITE_BASE_PATH: ${VITE_BASE_PATH}
+      VITE_ALLOWED_HOSTS: ${VITE_ALLOWED_HOSTS}
+      VITE_APP_NAME: ${VITE_APP_NAME}
+      VITE_APP_SUBTITLE: ${VITE_APP_SUBTITLE}
+      VITE_ENVIRONMENT: ${VITE_ENVIRONMENT}
+      VITE_MOCK_AUTH_ENABLED: ${VITE_MOCK_AUTH_ENABLED}
+      API_UPSTREAM_URL: ${API_UPSTREAM_URL}
+      CORE_API_UPSTREAM_URL: ${CORE_API_UPSTREAM_URL}
+      SWITCH_API_UPSTREAM_URL: ${SWITCH_API_UPSTREAM_URL:-http://136.69.42.14}
+      API_KEY: ${API_KEY}
+
+    networks:
+      - banquito-net
+
+networks:
+  banquito-net:
+    external: true
+    name: banquito-net

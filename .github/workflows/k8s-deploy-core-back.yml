@@ -1,0 +1,102 @@
+name: Deploy Core Backend to GKE
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Servicio Core a desplegar (all, banquito-core-seguridad, banquito-core-clientes, banquito-core-admin, banquito-core-contable, banquito-core-transaccional, banquito-core-notificaciones, banquito-core-documentos)"
+        required: true
+        default: "all"
+
+  repository_dispatch:
+    types: [k8s-deploy-core-back]
+
+env:
+  GCP_PROJECT_ID: banquitog2-p3
+  GKE_CLUSTER_NAME: banquito-cluster
+  GKE_ZONE: us-central1
+  NAMESPACE: banquito-core
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Autenticar en Google Cloud usando el Service Account Key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 2. Configurar credenciales para acceder al clúster GKE
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # 3. Forzar reinicio y despliegue del servicio modificado
+      - name: Deploy Service to GKE
+        run: |
+          SERVICE="${{ github.event.client_payload.service || github.event.inputs.service }}"
+
+          resolve_deployment_name() {
+            case "$1" in
+              all|"") echo "all" ;;
+              banquito-core-seguridad|banquito-core-seguridad-3p|identity-access-service|seguridad)
+                echo "banquito-core-seguridad-3p"
+                ;;
+              banquito-core-clientes|banquito-core-clientes-3p|core-customer-service|clientes)
+                echo "banquito-core-clientes-3p"
+                ;;
+              banquito-core-admin|banquito-core-admin-3p|core-admin-service|admin)
+                echo "banquito-core-admin-3p"
+                ;;
+              banquito-core-contable|banquito-core-contable-3p|core-accounting-service|contable)
+                echo "banquito-core-contable-3p"
+                ;;
+              banquito-core-transaccional|banquito-core-transaccional-3p|core-account-service|transaccional)
+                echo "banquito-core-transaccional-3p"
+                ;;
+              banquito-core-notificaciones|banquito-core-notificaciones-3p|notification-service|notificacion)
+                echo "banquito-core-notificaciones-3p"
+                ;;
+              banquito-core-documentos|banquito-core-documentos-3p|document-service|documentos)
+                echo "banquito-core-documentos-3p"
+                ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          resolve_rollout_timeout() {
+            case "$1" in
+              banquito-core-documentos-3p) echo "420s" ;;
+              banquito-core-seguridad-3p|banquito-core-admin-3p|banquito-core-contable-3p) echo "300s" ;;
+              *) echo "240s" ;;
+            esac
+          }
+          
+          # Si se pasa "all" o no se especifica, reiniciamos todos los microservicios en el namespace
+          if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
+            echo "Reiniciando TODOS los deployments en el namespace ${{ env.NAMESPACE }}..."
+            kubectl rollout restart deployment -n ${{ env.NAMESPACE }}
+
+            for DEPLOY_NAME in $(kubectl get deployments -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}'); do
+              TIMEOUT="$(resolve_rollout_timeout "$DEPLOY_NAME")"
+              echo "Esperando confirmacion de: $DEPLOY_NAME (timeout $TIMEOUT)"
+              kubectl rollout status deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }} --timeout="$TIMEOUT"
+            done
+          else
+            DEPLOY_NAME="$(resolve_deployment_name "$SERVICE")"
+            TIMEOUT="$(resolve_rollout_timeout "$DEPLOY_NAME")"
+            
+            echo "Ejecutando Rollout Restart para: $DEPLOY_NAME en namespace: ${{ env.NAMESPACE }}..."
+            kubectl rollout restart deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }}
+            
+            echo "Esperando confirmacion del despliegue (timeout $TIMEOUT)..."
+            kubectl rollout status deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }} --timeout="$TIMEOUT"
+          fi
+           

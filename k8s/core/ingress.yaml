@@ -1,0 +1,101 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: banquito-core-ingress
+  annotations:
+    kubernetes.io/ingress.class: gce
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/identity
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-seguridad-3p
+                port:
+                  number: 8081
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-seguridad-3p
+                port:
+                  number: 8081
+          - path: /api/v1/iam
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-seguridad-3p
+                port:
+                  number: 8081
+          - path: /api/v1/onboarding
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-seguridad-3p
+                port:
+                  number: 8081
+          - path: /api/v1/customers
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-clientes-3p
+                port:
+                  number: 8082
+          - path: /api/v1/admin
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-admin-3p
+                port:
+                  number: 8083
+          - path: /api/v1/accounting
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-contable-3p
+                port:
+                  number: 8084
+          - path: /api/v1/accounts
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-transaccional-3p
+                port:
+                  number: 8085
+          - path: /api/v1/teller
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-transaccional-3p
+                port:
+                  number: 8085
+          - path: /api/v1/switch-core
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-transaccional-3p
+                port:
+                  number: 8085
+          - path: /api/v1/documents
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-documentos-3p
+                port:
+                  number: 8086
+          - path: /api/v1/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-core-notificaciones-3p
+                port:
+                  number: 8087
+          - path: /mailpit
+            pathType: Prefix
+            backend:
+              service:
+                name: mailpit
+                port:
+                  number: 8025

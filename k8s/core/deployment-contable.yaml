@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banquito-core-contable-3p
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: banquito-core-contable-3p
+  template:
+    metadata:
+      labels:
+        app: banquito-core-contable-3p
+    spec:
+      serviceAccountName: banquito-core-apps
+      containers:
+        - name: banquito-core-contable-3p
+          image: us-central1-docker.pkg.dev/banquitog2-p3/banquito/banquito-core-contable:prod
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8084
+            - name: grpc
+              containerPort: 9094
+          envFrom:
+            - configMapRef:
+                name: banquito-core-config
+            - secretRef:
+                name: core-secrets
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: core-accounting-service
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: ACCOUNTING_SERVER_PORT
+            - name: GRPC_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: ACCOUNTING_GRPC_PORT
+          volumeMounts:
+            - name: accounting-reports
+              mountPath: /reports/eod
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+      volumes:
+        - name: accounting-reports
+          persistentVolumeClaim:
+            claimName: accounting-reports-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-core-contable-3p
+spec:
+  selector:
+    app: banquito-core-contable-3p
+  ports:
+    - name: http
+      port: 8084
+      targetPort: http
+    - name: grpc
+      port: 9094
+      targetPort: grpc

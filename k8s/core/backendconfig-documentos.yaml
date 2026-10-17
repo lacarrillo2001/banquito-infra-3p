@@ -1,0 +1,13 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: banquito-core-documentos-backendconfig
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: /api-docs
+    port: 8086
+    checkIntervalSec: 15
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3

@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: banquito-switch
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - externalsecret.yaml
+  - pvc-sftp-data.yaml
+  - pvc-switch-output.yaml
+  - deployment-lotes.yaml
+  - deployment-pagos-internos.yaml
+  - deployment-pagos-externos.yaml
+  - deployment-facturacion.yaml
+  - deployment-reportes.yaml
+  - deployment-sftp.yaml
+  - ingress.yaml

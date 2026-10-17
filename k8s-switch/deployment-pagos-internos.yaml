@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banquito-sw-pagos-internos-3p
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: banquito-sw-pagos-internos-3p
+  template:
+    metadata:
+      labels:
+        app: banquito-sw-pagos-internos-3p
+    spec:
+      serviceAccountName: banquito-switch-apps
+      containers:
+        - name: banquito-sw-pagos-internos-3p
+          image: us-central1-docker.pkg.dev/banquitog2-p3/banquito/banquito-sw-pagos-internos:prod
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: banquito-switch-config
+            - secretRef:
+                name: switch-secrets
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-switch-config
+                  key: PAGOS_INTERNOS_SERVER_PORT
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: PAGOS_INTERNOS_DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: PAGOS_INTERNOS_DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: PAGOS_INTERNOS_DB_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-sw-pagos-internos-3p
+spec:
+  selector:
+    app: banquito-sw-pagos-internos-3p
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http

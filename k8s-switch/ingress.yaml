@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: banquito-switch-ingress
+  annotations:
+    kubernetes.io/ingress.class: gce
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api/v1/batches
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-sw-lotes-3p
+                port:
+                  number: 8081
+          - path: /api/v1/reporting
+            pathType: Prefix
+            backend:
+              service:
+                name: banquito-sw-reportes-3p
+                port:
+                  number: 8085

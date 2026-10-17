@@ -1,0 +1,30 @@
+name: Deploy Switch Frontend
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Servicio Switch Frontend a desplegar"
+        required: true
+        default: "sw-frontend"
+
+  repository_dispatch:
+    types: [deploy-switch-front]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy Switch Frontend service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.FRONT_VM_HOST }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.GCP_VM_USER }}/banquito-infra-3p
+            SERVICE="${{ github.event.client_payload.service || github.event.inputs.service }}"
+            bash scripts/deploy-switch-front.sh "$SERVICE"

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banquito-sw-reportes-3p
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: banquito-sw-reportes-3p
+  template:
+    metadata:
+      labels:
+        app: banquito-sw-reportes-3p
+    spec:
+      serviceAccountName: banquito-switch-apps
+      containers:
+        - name: banquito-sw-reportes-3p
+          image: us-central1-docker.pkg.dev/banquitog2-p3/banquito/banquito-sw-reportes:prod
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8085
+            - name: grpc
+              containerPort: 9095
+          envFrom:
+            - configMapRef:
+                name: banquito-switch-config
+            - secretRef:
+                name: switch-secrets
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-switch-config
+                  key: REPORTES_SERVER_PORT
+            - name: GRPC_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-switch-config
+                  key: REPORTES_GRPC_SERVER_PORT
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: REPORTES_DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: REPORTES_DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: switch-secrets
+                  key: REPORTES_DB_PASSWORD
+          volumeMounts:
+            - name: switch-output
+              mountPath: /app/output
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: switch-output
+          persistentVolumeClaim:
+            claimName: banquito-switch-output
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-sw-reportes-3p
+spec:
+  selector:
+    app: banquito-sw-reportes-3p
+  ports:
+    - name: http
+      port: 8085
+      targetPort: http
+    - name: grpc
+      port: 9095
+      targetPort: grpc

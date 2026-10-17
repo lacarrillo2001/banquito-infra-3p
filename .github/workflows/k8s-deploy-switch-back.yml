@@ -1,0 +1,97 @@
+name: Deploy Switch Backend to GKE
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Servicio Switch a desplegar (all, banquito-sw-lotes, banquito-sw-pagos-internos, banquito-sw-pagos-externos, banquito-sw-facturacion, banquito-sw-reportes, banquito-sw-sftp)"
+        required: true
+        default: "all"
+
+  repository_dispatch:
+    types: [k8s-deploy-switch-back]
+
+env:
+  GCP_PROJECT_ID: banquitog2-p3
+  GKE_CLUSTER_NAME: banquito-cluster
+  GKE_ZONE: us-central1
+  NAMESPACE: banquito-switch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Autenticar en Google Cloud usando el Service Account Key
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      # 2. Configurar credenciales para acceder al clúster GKE
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # 3. Forzar reinicio y despliegue del servicio modificado
+      - name: Deploy Service to GKE
+        run: |
+          SERVICE="${{ github.event.client_payload.service || github.event.inputs.service }}"
+
+          resolve_deployment_name() {
+            case "$1" in
+              all|"") echo "all" ;;
+              banquito-sw-lotes|banquito-sw-lotes-3p|batch-service|lotes)
+                echo "banquito-sw-lotes-3p"
+                ;;
+              banquito-sw-pagos-internos|banquito-sw-pagos-internos-3p|on-us-settlement-service|settlement|pagos-internos)
+                echo "banquito-sw-pagos-internos-3p"
+                ;;
+              banquito-sw-pagos-externos|banquito-sw-pagos-externos-3p|external-payments-service|pagos-externos)
+                echo "banquito-sw-pagos-externos-3p"
+                ;;
+              banquito-sw-facturacion|banquito-sw-facturacion-3p|billing-service|billing|facturacion)
+                echo "banquito-sw-facturacion-3p"
+                ;;
+              banquito-sw-reportes|banquito-sw-reportes-3p|reporting-service|reporting|reportes)
+                echo "banquito-sw-reportes-3p"
+                ;;
+              banquito-sw-sftp|banquito-sw-sftp-3p|sftp-service|sftp)
+                echo "banquito-sw-sftp-3p"
+                ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          resolve_rollout_timeout() {
+            case "$1" in
+              banquito-sw-sftp-3p) echo "300s" ;;
+              banquito-sw-lotes-3p|banquito-sw-reportes-3p) echo "240s" ;;
+              *) echo "180s" ;;
+            esac
+          }
+
+          if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
+            echo "Reiniciando TODOS los deployments en el namespace ${{ env.NAMESPACE }}..."
+            kubectl rollout restart deployment -n ${{ env.NAMESPACE }}
+
+            for DEPLOY_NAME in $(kubectl get deployments -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}'); do
+              TIMEOUT="$(resolve_rollout_timeout "$DEPLOY_NAME")"
+              echo "Esperando confirmacion de: $DEPLOY_NAME (timeout $TIMEOUT)"
+              kubectl rollout status deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }} --timeout="$TIMEOUT"
+            done
+          else
+            DEPLOY_NAME="$(resolve_deployment_name "$SERVICE")"
+            TIMEOUT="$(resolve_rollout_timeout "$DEPLOY_NAME")"
+
+            echo "Ejecutando Rollout Restart para: $DEPLOY_NAME en namespace: ${{ env.NAMESPACE }}..."
+            kubectl rollout restart deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }}
+
+            echo "Esperando confirmacion del despliegue (timeout $TIMEOUT)..."
+            kubectl rollout status deployment/$DEPLOY_NAME -n ${{ env.NAMESPACE }} --timeout="$TIMEOUT"
+          fi

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banquito-core-seguridad-3p
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: banquito-core-seguridad-3p
+  template:
+    metadata:
+      labels:
+        app: banquito-core-seguridad-3p
+    spec:
+      serviceAccountName: banquito-core-apps
+      containers:
+        - name: banquito-core-seguridad-3p
+          image: us-central1-docker.pkg.dev/banquitog2-p3/banquito/banquito-core-seguridad:prod
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: banquito-core-config
+            - secretRef:
+                name: core-secrets
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: identity-access-service
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: IDENTITY_SERVER_PORT
+            - name: DEMO_DATA_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: banquito-core-config
+                  key: IDENTITY_DEMO_DATA_ENABLED
+            - name: DEMO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: core-secrets
+                  key: IDENTITY_DEMO_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banquito-core-seguridad-3p
+spec:
+  selector:
+    app: banquito-core-seguridad-3p
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
